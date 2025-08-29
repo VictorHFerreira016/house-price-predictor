@@ -1,20 +1,34 @@
 import pandas as pd
+import logging 
+from src.config import DATA_CONFIG
+from src.validation import validate_train_dataset, validate_test_dataset, DataValidationError
+
+logger = logging.getLogger(__name__)
 
 def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
-
-    """Handles missing values in the DataFrame by filling them with appropriate values.
+    """
+    Handles missing values in the DataFrame by filling them with appropriate values.
+    
     Args: 
         df (pd.DataFrame): The DataFrame to process.
-        Returns:
-        pd.DataFrame: The DataFrame with missing values handled."""
+        
+    Returns:
+        pd.DataFrame: The DataFrame with missing values handled.
+        
+    Raises:
+        DataValidationError: If DataFrame is empty
+    """
     
-    none_categories = ["PoolQC", "Alley", "Fence", "FireplaceQu", "GarageQual", "GarageType", 
-                   "GarageFinish", "GarageCond", "BsmtExposure", "BsmtFinType1", "BsmtFinType2",
-                   "BsmtQual", "BsmtCond", "MasVnrType", "MiscFeature"]
+    if df.empty:
+        raise ValueError("The input DataFrame is empty.")
     
-    # Fill the NaN values with None
-    for i in none_categories:
-        df[i] = df[i].fillna("None")
+    df = df.copy()
+    
+    if DATA_CONFIG.NONE_FILL_COLUMNS:
+        existing_none_columns = [col for col in DATA_CONFIG.NONE_FILL_COLUMNS if col in df.columns]
+        for col in existing_none_columns:
+            df[col] = df[col].fillna("None")
+            logger.debug(f"Preenchido {df[col].isna().sum()} valores ausentes em '{col}' com 'None'")
 
     # Fill the "Electrical" feature with the mode
     if 'Electrical' in df.columns:
@@ -50,13 +64,13 @@ def apply_feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     if all(col in df.columns for col in total_area):
         df['TotalLivingArea'] = df['1stFlrSF'] + df['2ndFlrSF'] + df['LowQualFinSF'] + \
                                 df['GrLivArea'] + df['BsmtFinSF1'] + df['BsmtFinSF2']
-        
     else: 
         print("Not all required columns for TotalLivingArea are present in the DataFrame.")
         df['TotalLivingArea'] = 0
+
     return df
 
-def preprocess_for_model(df: pd.DataFrame, trained_columns: list = None) -> pd.DataFrame:
+def preprocess_for_model(df: pd.DataFrame, trained_columns: list | None = None) -> pd.DataFrame:
     """Uses the DataFrame to preprocess all the data necessary to the model
     Args:
         df (pd.DataFrame): it is the DataFrame.
@@ -95,11 +109,27 @@ def preprocess_for_model(df: pd.DataFrame, trained_columns: list = None) -> pd.D
 
     return df_processed
 
-def load_and_preprocess_data(file_path: str) -> pd.DataFrame:
-    """Load the data specified and process it."""
+def load_and_preprocess_data(file_path: str, is_training: bool = False) -> pd.DataFrame:
+    """
+    Load the data specified and process it.
+    
+    Args:
+        file_path (str): The path to the CSV file.
+        is_training (bool): Flag to indicate if the data is for training.
+    """
     df = pd.read_csv(file_path)
-    if 'Id' in df.columns:
-        df = df.drop(columns=['Id'])
+    try:
+        if is_training:
+            required_cols = DATA_CONFIG.REQUIRED_TRAIN_COLUMNS or []
+            validate_train_dataset(df, required_columns=required_cols)
+        else:
+            required_cols = DATA_CONFIG.REQUIRED_TEST_COLUMNS or []
+            validate_test_dataset(df, required_columns=required_cols)
+    except DataValidationError as e:
+        logger.error(f"Falha na validação dos dados: {e}")
+        raise
 
-    df = handle_missing_values(df.copy())
+    df = handle_missing_values(df)
+    df = apply_feature_engineering(df)
+    
     return df

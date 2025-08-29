@@ -1,8 +1,9 @@
 import pandas as pd
-from sklearn.metrics import root_mean_squared_error, r2_score
+from sklearn.metrics import root_mean_squared_error, r2_score, mean_absolute_error, mean_squared_log_error
 import joblib
 import os 
 from src.preprocessing import load_and_preprocess_data, preprocess_for_model
+from src.config import get_config, PATH_CONFIG
 
 # This function is used to test and evaluate the model with data test.
 def evaluate_model(model_path: str, data_path: str, features_path: str):
@@ -40,19 +41,25 @@ def evaluate_model(model_path: str, data_path: str, features_path: str):
 
         rmse = root_mean_squared_error(y_test, predictions)
         r2 = r2_score(y_test, predictions)
+        mae = mean_absolute_error(y_test, predictions)
+        msle = mean_squared_log_error(y_test, predictions)
+
         print(f'Root Mean Squared Error: {rmse}')
         print(f'R^2 Score: {r2}')
+        print(f'Mean Absolute Error: {mae}')
+        print(f'Mean Squared Log Error: {msle}')
 
         try: 
             import matplotlib.pyplot as plt
             import seaborn as sns
             # Defines the folder path to save the figures
-            output_dir = 'reports/figures'
+            output_dir = PATH_CONFIG.FIGURES_PATH
             # Creates a folder caled "reports/figures"
             os.makedirs(output_dir, exist_ok=True)
 
             plt.figure(figsize=(10, 6))
             sns.scatterplot(x=y_test, y=predictions)
+            # Adds a diagonal line representing perfect predictions, indicating where the predicted values would equal the actual values
             plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color='red', linestyle='--')
             plt.xlabel("Actual Prices")
             plt.ylabel("Predicted Prices")
@@ -84,19 +91,22 @@ def evaluate_model(model_path: str, data_path: str, features_path: str):
             'Id': df_raw['Id'] if 'Id' in df_raw.columns else df_raw.index,
             'SalePrice': predictions
         })
+        # Saves the DataFrame to a CSV file without the index
+        # The submission file is used for making predictions on the test set
 
-        output_path = r'C:\Users\Aluno\OneDrive\Desktop\PROJECTS\data\processed\submission.csv'
+        output_path = PATH_CONFIG.PROCESSED_DATA_PATH / "submission.csv"
         submission_df.to_csv(output_path, index=False)
         print(f"Submission file saved to {output_path}")
 
 if __name__ == "__main__":
-    model_file = r'C:\Users\Aluno\OneDrive\Desktop\PROJECTS\models\house_price_model.pkl'
-    features_file = r'C:\Users\Aluno\OneDrive\Desktop\PROJECTS\models\model_features.txt'
-    data_file_for_evaluation = r'C:\Users\Aluno\OneDrive\Desktop\PROJECTS\data\raw\train.csv'
-    data_file_for_submission = r'C:\Users\Aluno\OneDrive\Desktop\PROJECTS\data\raw\test.csv'
+    configs = get_config()
+    model_file = configs['paths'].MODEL_PATH / "house_price_model.pkl"
+    features_file = configs['paths'].MODEL_PATH / "model_features.txt"
+    data_file_for_evaluation = configs['paths'].RAW_DATA_PATH / "train.csv"
+    data_file_for_submission = configs['paths'].RAW_DATA_PATH / "test.csv"
 
     print("\n --- Evaluating Model --- \n")
-    evaluate_model(model_file, data_file_for_evaluation, features_file)
+    evaluate_model(str(model_file), str(data_file_for_evaluation), str(features_file))
     
     print("\n --- Generating Submission File --- \n")
-    evaluate_model(model_file, data_file_for_submission, features_file)
+    evaluate_model(str(model_file), str(data_file_for_submission), str(features_file))
