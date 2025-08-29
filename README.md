@@ -2,39 +2,31 @@
 <p> Hello! This is a Machine Learning project designed to predict real estate prices based on their characteristics. It uses a Random Forest Regressor model and is structured in a modular and easy-to-use way, with a complete pipeline that ranges from data preprocessing to forecast generation.
 
 ## Project Structure 
-.
-├── data/
-│   ├── raw/
-│   │   ├── train.csv         # Train data
-│   │   └── test.csv          # Test data
-│   └── processed/
-│       └── submission.csv    # Submission file
-├── models/
-│   ├── house_price_model.pkl # Trained model saved
-│   └── model_features.txt    # Features list
-├── reports/
-│   └── figures/
-│       ├── actual_vs_predicted.png # Scatter plot
-│       └── prediction_errors.png   # Errors histogram
-├── src/
-│   ├── __init__.py
-│   ├── config.py             # All project configs
-│   ├── evaluate.py           # Logic for evaluating the model and generating predictions
-│   ├── preprocessing.py      # Cleanup functions and feature engineering
-│   ├── train.py              # Logic for training the model
-│   └── validation.py         # Functions to validate data
-├── main.py                   # Entry point to execute the pipeline
-└── requirements.txt          # List of required libraries
-
-## Prerequisites
-
-- **Python 3.8 or higher**
-- **Pip (Python package manager)**
+- 'src/': preprocessing and training scripts
+- 'data/raw/': raw data files
+- 'models/': training model files
 
 ## How to run
-1. First, clone the repository to your machine:
-git clone https://github.com/VictorHFerreira016/house-price-predictor
+1. Clone the repository 
+git clone https://github.com/seu-usuario/house-price-predictor.git
 cd house-price-predictor
+
+#### 2. Create a Virtual Enviroment <p>
+python -m venv .venv <p>
+source .venv/bin/activate        # Linux/Mac <p>
+.venv\Scripts\activate           # Windows
+
+#### 3. Install Requirements <p>
+pip install -r requirements.txt
+
+#### 4. Add the data file <p>
+Place the train.csv file in data/raw/.
+
+#### 5. Train the model <p>
+python src/train.py
+
+#### 6. Evaluate the model <p>
+python src/evaluate.py
 
 **Create a virtual environment**
 
